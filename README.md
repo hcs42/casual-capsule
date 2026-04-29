@@ -449,6 +449,9 @@ Options:
 *   `--build-custom`: Run `docker compose build cli` only for the merged custom
     compose configuration before `run`. Requires `CAPSULE_CUSTOM_COMPOSE`.
 
+*   `--no-cache`: Pass `--no-cache` to the build commands triggered by
+    `--build` or `--build-custom`.
+
 *   `-h`, `--help`: Show usage message.
 
 *   `--`: Stop launcher option parsing; pass remaining arguments to

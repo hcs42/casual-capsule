@@ -95,6 +95,7 @@ if [[ "$_CAPSULE_ID_WARN" -eq 1 ]]; then
 fi
 BUILD_MODE="none"
 BUILD_MODE_FLAG=""
+NO_CACHE=0
 RUNTIME_ARGS=()
 CAPSULE_CUSTOM_COMPOSE="${CAPSULE_CUSTOM_COMPOSE:-}"
 CAPSULE_CUSTOM_DIR=""
@@ -106,6 +107,7 @@ Usage: capsule.sh [options] [--] [command...]
 Options:
   -b, --build  Run "docker compose build cli" before runtime.
       --build-custom  Run the custom compose build before runtime.
+      --no-cache  Pass --no-cache to build commands run by this script.
   -h, --help   Show this help message.
 
 Environment:
@@ -176,6 +178,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --build-custom)
       set_build_mode "custom" "$1"
+      shift
+      ;;
+    --no-cache)
+      NO_CACHE=1
       shift
       ;;
     -h|--help)
@@ -329,17 +335,25 @@ if [[ "$BUILD_MODE" != "none" ]]; then
     fi
 fi
 
+BUILD_NO_CACHE_ARGS=()
+if [[ "$NO_CACHE" -eq 1 ]]; then
+    BUILD_NO_CACHE_ARGS=(--no-cache)
+fi
+
 if [[ "$BUILD_MODE" == "all" ]]; then
     "${BASE_COMPOSE_CMD[@]}" build \
+      "${BUILD_NO_CACHE_ARGS[@]}" \
       --build-arg "MISE_VERSION=${MISE_VERSION}" cli
     if [[ -n "$CAPSULE_CUSTOM_COMPOSE" ]]; then
       "${COMPOSE_CMD[@]}" build \
+        "${BUILD_NO_CACHE_ARGS[@]}" \
         --build-arg "MISE_VERSION=${MISE_VERSION}" cli
     fi
 fi
 
 if [[ "$BUILD_MODE" == "custom" ]]; then
     "${COMPOSE_CMD[@]}" build \
+      "${BUILD_NO_CACHE_ARGS[@]}" \
       --build-arg "MISE_VERSION=${MISE_VERSION}" cli
 fi
 

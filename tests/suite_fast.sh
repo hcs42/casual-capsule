@@ -302,6 +302,35 @@ test_build_flag_runs_build_then_runtime() {
     "build flag still runs compose runtime"
 }
 
+test_no_cache_flag_applies_to_build_only() {
+  local tdir="$TEST_TMPDIR/build-no-cache"
+  local mock_bin="$tdir/bin"
+  local log_file="$tdir/log"
+  local expected_build=""
+  local expected_run=""
+  local mise_ver="2024.1.0"
+  mkdir -p "$tdir"
+  make_mock_bin "$mock_bin"
+
+  DOCKER_GID=1111 run_capsule "$mock_bin" "$log_file" \
+    --build --no-cache true
+
+  expected_build="ARGS=compose -f $COMPOSE_PATH"
+  expected_build="$expected_build build --no-cache"
+  expected_build="$expected_build --build-arg MISE_VERSION=${mise_ver} cli"
+  expected_run="ARGS=compose -f $COMPOSE_PATH"
+  expected_run="$expected_run run --rm cli true"
+
+  assert_equals \
+    "$expected_build" \
+    "$(entry_from_log ARGS 1 "$log_file")" \
+    "no-cache flag applies to the base build"
+  assert_equals \
+    "$expected_run" \
+    "$(entry_from_log ARGS 2 "$log_file")" \
+    "no-cache flag does not change runtime args"
+}
+
 # Verify -- passes --build-custom through to the runtime command.
 test_build_custom_flag_keeps_runtime_flags() {
   local tdir="$TEST_TMPDIR/build-custom-double-dash"
@@ -519,6 +548,47 @@ test_custom_compose_builds_base_then_custom_then_runs() {
     "custom build still runs the merged config"
 }
 
+test_custom_compose_no_cache_builds_only_affect_build_steps() {
+  local tdir="$TEST_TMPDIR/custom-build-no-cache"
+  local mock_bin="$tdir/bin"
+  local log_file="$tdir/log"
+  local custom_dir="$tdir/custom"
+  local custom_compose="$custom_dir/compose.yml"
+  local expected_build=""
+  local expected_custom_build=""
+  local expected_run=""
+  local mise_ver="2024.1.0"
+  mkdir -p "$tdir"
+  make_mock_bin "$mock_bin"
+  make_custom_compose "$custom_dir" "python-capsule:local"
+
+  DOCKER_GID=1111 CAPSULE_CUSTOM_COMPOSE="$custom_compose" \
+    run_capsule "$mock_bin" "$log_file" --build --no-cache true
+
+  expected_build="ARGS=compose -f $COMPOSE_PATH"
+  expected_build="$expected_build build --no-cache"
+  expected_build="$expected_build --build-arg MISE_VERSION=${mise_ver} cli"
+  expected_custom_build="ARGS=compose -f $COMPOSE_PATH -f $custom_compose"
+  expected_custom_build="$expected_custom_build build --no-cache"
+  expected_custom_build="$expected_custom_build --build-arg"
+  expected_custom_build="$expected_custom_build MISE_VERSION=${mise_ver} cli"
+  expected_run="ARGS=compose -f $COMPOSE_PATH -f $custom_compose"
+  expected_run="$expected_run run --rm cli true"
+
+  assert_equals \
+    "$expected_build" \
+    "$(entry_from_log ARGS 1 "$log_file")" \
+    "no-cache flag applies to the base image build"
+  assert_equals \
+    "$expected_custom_build" \
+    "$(entry_from_log ARGS 2 "$log_file")" \
+    "no-cache flag applies to the merged config build"
+  assert_equals \
+    "$expected_run" \
+    "$(entry_from_log ARGS 3 "$log_file")" \
+    "no-cache flag does not change merged runtime args"
+}
+
 # Verify --build-custom skips the base build and runs the merged config.
 test_custom_compose_build_custom_then_runs() {
   local tdir="$TEST_TMPDIR/custom-build-only"
@@ -582,6 +652,39 @@ test_build_custom_flag_without_runtime_args() {
     "$expected_run" \
     "$(entry_from_log ARGS 2 "$log_file")" \
     "build-custom flag works without runtime args (run call)"
+}
+
+test_build_custom_no_cache_applies_to_custom_build_only() {
+  local tdir="$TEST_TMPDIR/build-custom-no-cache"
+  local mock_bin="$tdir/bin"
+  local log_file="$tdir/log"
+  local custom_dir="$tdir/custom"
+  local custom_compose="$custom_dir/compose.yml"
+  local expected_custom_build=""
+  local expected_run=""
+  local mise_ver="2024.1.0"
+  mkdir -p "$tdir"
+  make_mock_bin "$mock_bin"
+  make_custom_compose "$custom_dir" "python-capsule:local"
+
+  DOCKER_GID=1111 CAPSULE_CUSTOM_COMPOSE="$custom_compose" \
+    run_capsule "$mock_bin" "$log_file" --build-custom --no-cache true
+
+  expected_custom_build="ARGS=compose -f $COMPOSE_PATH -f $custom_compose"
+  expected_custom_build="$expected_custom_build build --no-cache"
+  expected_custom_build="$expected_custom_build --build-arg"
+  expected_custom_build="$expected_custom_build MISE_VERSION=${mise_ver} cli"
+  expected_run="ARGS=compose -f $COMPOSE_PATH -f $custom_compose"
+  expected_run="$expected_run run --rm cli true"
+
+  assert_equals \
+    "$expected_custom_build" \
+    "$(entry_from_log ARGS 1 "$log_file")" \
+    "no-cache flag applies to build-custom"
+  assert_equals \
+    "$expected_run" \
+    "$(entry_from_log ARGS 2 "$log_file")" \
+    "no-cache flag does not affect build-custom runtime args"
 }
 
 # Verify a missing custom compose path fails before any Compose invocation.
@@ -913,6 +1016,7 @@ main() {
   test_dockerfile_uid_gid_contract
   test_entrypoint_contract
   test_build_flag_runs_build_then_runtime
+  test_no_cache_flag_applies_to_build_only
   test_double_dash_keeps_runtime_flags
   test_build_custom_flag_keeps_runtime_flags
   test_build_flag_without_runtime_args
@@ -921,8 +1025,10 @@ main() {
   test_plain_runtime_without_args
   test_custom_compose_runtime_uses_merged_config
   test_custom_compose_builds_base_then_custom_then_runs
+  test_custom_compose_no_cache_builds_only_affect_build_steps
   test_custom_compose_build_custom_then_runs
   test_build_custom_flag_without_runtime_args
+  test_build_custom_no_cache_applies_to_custom_build_only
   test_custom_compose_requires_existing_file
   test_custom_compose_requires_readable_file
   test_custom_compose_requires_cli_image
