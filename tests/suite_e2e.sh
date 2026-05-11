@@ -151,11 +151,13 @@ test_custom_compose_end_to_end() {
   fi
 
   printf '%s\n' "$EXAMPLE_PROJECT_DIR" >"$config_file"
+  # shellcheck disable=SC2016
   check_cmd='bash ./check-env.sh && [[ "${CUSTOM_CAPSULE_IMAGE:-}" == "1" ]]'
   check_cmd="$check_cmd && [[ \"\${CUSTOM_CAPSULE_COMPOSE:-}\" == \"1\" ]]"
   check_cmd="$check_cmd && printf \"custom capsule ok\\n\""
 
   log_message "Running capsule.sh --build with CAPSULE_CUSTOM_COMPOSE"
+  # shellcheck disable=SC2016
   if run_logged bash -c '
     unset CAPSULE_WORKDIR
     cd "$1" &&

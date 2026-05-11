@@ -31,7 +31,7 @@ common developer tools.
 - [Configuration reference](#-configuration-reference)
   - [Command line options](#command-line-options)
   - [Environment variables](#environment-variables)
-- [Run tests](#-run-tests)
+- [Run checks and tests](#-run-checks-and-tests)
 - [Included agent tooling](#-included-agent-tooling)
 - [Security Note](#-security-note)
 - [License](#-license)
@@ -476,19 +476,29 @@ Options:
 
 *   `GITHUB_API_TOKEN`: Passed as a build secret for `gh` auth and Copilot CLI.
 
-## 🧪 Run tests
+## 🧪 Run checks and tests
 
-Run the tests on the host:
+Run lint checks on the host:
+
+```bash
+$ tests/check_all.sh
+```
+
+Run the test suites on the host:
 
 ```bash
 $ tests/test_all.sh
 ```
 
-Run the tests inside a Capsule:
+Run checks and tests inside a Capsule:
 
-```
+```bash
+$ CAPSULE_HOST_WORKDIR=$(pwd) capsule tests/check_all.sh
 $ CAPSULE_HOST_WORKDIR=$(pwd) capsule tests/test_all.sh
 ```
+
+`check_all.sh` runs `dclint`, `hadolint`, and `shellcheck` on discovered files.
+When one of these tools is missing, it prints a warning and skips that linter.
 
 `test_all.sh` prints each suite name before running it.
 
