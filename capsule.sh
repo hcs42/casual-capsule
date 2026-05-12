@@ -342,18 +342,18 @@ fi
 
 if [[ "$BUILD_MODE" == "all" ]]; then
     "${BASE_COMPOSE_CMD[@]}" build \
-      "${BUILD_NO_CACHE_ARGS[@]}" \
+      ${BUILD_NO_CACHE_ARGS[@]+"${BUILD_NO_CACHE_ARGS[@]}"} \
       --build-arg "MISE_VERSION=${MISE_VERSION}" cli
     if [[ -n "$CAPSULE_CUSTOM_COMPOSE" ]]; then
       "${COMPOSE_CMD[@]}" build \
-        "${BUILD_NO_CACHE_ARGS[@]}" \
+        ${BUILD_NO_CACHE_ARGS[@]+"${BUILD_NO_CACHE_ARGS[@]}"} \
         --build-arg "MISE_VERSION=${MISE_VERSION}" cli
     fi
 fi
 
 if [[ "$BUILD_MODE" == "custom" ]]; then
     "${COMPOSE_CMD[@]}" build \
-      "${BUILD_NO_CACHE_ARGS[@]}" \
+      ${BUILD_NO_CACHE_ARGS[@]+"${BUILD_NO_CACHE_ARGS[@]}"} \
       --build-arg "MISE_VERSION=${MISE_VERSION}" cli
 fi
 
