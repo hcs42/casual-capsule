@@ -52,6 +52,11 @@ run_logged() {
 fail() {
   log_message "FAIL: $1"
   printf 'FAIL: %s\n' "$1" >&2
+  printf 'FAIL: see e2e log: %s\n' "$LOG_FILE" >&2
+  if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+    printf '%s\n' \
+      'FAIL: in GitHub Actions, download the uploaded e2e log artifact.' >&2
+  fi
   FAIL_COUNT=$((FAIL_COUNT + 1))
 }
 
