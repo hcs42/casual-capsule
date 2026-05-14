@@ -51,6 +51,17 @@ assert_file_contains() {
   fi
 }
 
+assert_file_not_contains() {
+  local file="$1"
+  local needle="$2"
+  local msg="$3"
+  if grep -Fq -- "$needle" "$file"; then
+    fail "$msg (unexpected: $needle)"
+  else
+    pass "$msg"
+  fi
+}
+
 assert_equals() {
   local expected="$1"
   local actual="$2"
@@ -195,6 +206,15 @@ test_dockerfile_tooling_contract() {
     "image installs tree for directory visualization"
   assert_file_contains "$DOCKERFILE_PATH" 'https://mise.run' \
     "image installs mise"
+  assert_file_contains "$DOCKERFILE_PATH" \
+    "mise install --system \${MISE_SYSTEM_TOOLS} &&" \
+    "image installs system tools with mise"
+  assert_file_contains "$DOCKERFILE_PATH" \
+    "mise use --path /etc/mise/config.toml --pin \${MISE_SYSTEM_TOOLS}" \
+    "image pins system tools in the global mise config"
+  assert_file_not_contains "$DOCKERFILE_PATH" \
+    "mise use --global \${MISE_SYSTEM_TOOLS}" \
+    "image no longer activates system tools in the user home"
 }
 
 test_dockerfile_uid_gid_contract() {
