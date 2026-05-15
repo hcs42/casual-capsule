@@ -43,10 +43,10 @@ ENV MISE_INSTALL_PATH="/usr/local/bin/mise"
 RUN curl -fsSL https://mise.run | sh
 
 # Install system AI agents and tools with mise
-ARG MISE_SYSTEM_TOOLS="aqua:github/copilot-cli codex \
-        bat eza fd gh jq ripgrep usage uv"
+ARG MISE_SYSTEM_TOOLS="bat codex copilot eza fd gh jq ripgrep usage uv"
 RUN --mount=type=secret,id=github_api_token,env=GITHUB_API_TOKEN,required=false \
-    mise install --system ${MISE_SYSTEM_TOOLS}
+    mise install --system ${MISE_SYSTEM_TOOLS} && \
+    mise use --path /etc/mise/config.toml --pin ${MISE_SYSTEM_TOOLS}
 
 # Activate mise in interactive shells
 COPY --chmod=644 docker/mise.sh /etc/profile.d/
@@ -57,12 +57,8 @@ COPY --chmod=755 docker/entrypoint.sh /usr/local/bin/
 # Switch user
 USER user
 
-# Activate system tools
-RUN --mount=type=secret,id=github_api_token,env=GITHUB_API_TOKEN,required=false \
-    mise use --global ${MISE_SYSTEM_TOOLS}
-
 # GitHub token login
-RUN --mount=type=secret,id=github_api_token,uid=1000,required=false \
+RUN --mount=type=secret,id=github_api_token,uid=${CAPSULE_UID},required=false \
     if [ -s /run/secrets/github_api_token ]; then \
         mise x -- gh auth login --with-token </run/secrets/github_api_token; \
     fi

@@ -1,3 +1,5 @@
+name: fixture-custom-capsule
+
 services:
   cli:
     image: fixture-custom-capsule:local
@@ -6,3 +8,4 @@ services:
       dockerfile: ${CAPSULE_CUSTOM_DIR}/Dockerfile
     environment:
       CUSTOM_CAPSULE_COMPOSE: "1"
+    pull_policy: missing

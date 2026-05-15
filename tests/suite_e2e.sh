@@ -52,6 +52,11 @@ run_logged() {
 fail() {
   log_message "FAIL: $1"
   printf 'FAIL: %s\n' "$1" >&2
+  printf 'FAIL: see e2e log: %s\n' "$LOG_FILE" >&2
+  if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+    printf '%s\n' \
+      'FAIL: in GitHub Actions, download the uploaded e2e log artifact.' >&2
+  fi
   FAIL_COUNT=$((FAIL_COUNT + 1))
 }
 
@@ -151,11 +156,13 @@ test_custom_compose_end_to_end() {
   fi
 
   printf '%s\n' "$EXAMPLE_PROJECT_DIR" >"$config_file"
+  # shellcheck disable=SC2016
   check_cmd='bash ./check-env.sh && [[ "${CUSTOM_CAPSULE_IMAGE:-}" == "1" ]]'
   check_cmd="$check_cmd && [[ \"\${CUSTOM_CAPSULE_COMPOSE:-}\" == \"1\" ]]"
   check_cmd="$check_cmd && printf \"custom capsule ok\\n\""
 
   log_message "Running capsule.sh --build with CAPSULE_CUSTOM_COMPOSE"
+  # shellcheck disable=SC2016
   if run_logged bash -c '
     unset CAPSULE_WORKDIR
     cd "$1" &&
